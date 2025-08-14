@@ -1,3 +1,5 @@
+// skill.go
+
 package models
 
 // SkillType 技能类型

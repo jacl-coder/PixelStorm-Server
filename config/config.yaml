@@ -1,3 +1,5 @@
+# config.yaml
+
 server:
   game_port: 8080
   match_port: 8081

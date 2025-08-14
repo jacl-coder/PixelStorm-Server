@@ -1,3 +1,5 @@
+// setup.go
+
 package main
 
 import (

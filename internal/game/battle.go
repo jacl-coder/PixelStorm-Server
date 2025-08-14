@@ -1,3 +1,5 @@
+// battle.go
+
 package game
 
 import (

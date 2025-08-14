@@ -1,3 +1,5 @@
+// server.go
+
 package game
 
 import (

@@ -1,3 +1,5 @@
+// schema.go
+
 package db
 
 // 统一的数据库表结构定义

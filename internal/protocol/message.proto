@@ -1,3 +1,5 @@
+// message.proto
+
 syntax = "proto3";
 
 package protocol;

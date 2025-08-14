@@ -1,3 +1,5 @@
+// entity.go
+
 package models
 
 import (

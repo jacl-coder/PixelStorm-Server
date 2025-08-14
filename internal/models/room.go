@@ -1,3 +1,5 @@
+// room.go
+
 package models
 
 import (

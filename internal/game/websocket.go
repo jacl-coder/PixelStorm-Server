@@ -1,3 +1,5 @@
+// websocket.go
+
 package game
 
 import (

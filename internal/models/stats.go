@@ -1,3 +1,5 @@
+// stats.go
+
 package models
 
 import (

@@ -1,3 +1,5 @@
+// room.go
+
 package game
 
 import (

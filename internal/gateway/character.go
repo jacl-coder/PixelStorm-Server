@@ -1,3 +1,5 @@
+// character.go
+
 package gateway
 
 import (

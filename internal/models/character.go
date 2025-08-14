@@ -1,3 +1,5 @@
+// character.go
+
 package models
 
 // Character 角色模型

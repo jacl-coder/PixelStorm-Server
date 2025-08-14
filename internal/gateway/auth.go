@@ -1,3 +1,5 @@
+// auth.go
+
 package gateway
 
 import (

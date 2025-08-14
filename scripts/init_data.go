@@ -1,3 +1,5 @@
+// init_data.go
+
 package main
 
 import (
