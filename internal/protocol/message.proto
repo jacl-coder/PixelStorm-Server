@@ -1,0 +1,511 @@
+syntax = "proto3";
+
+package protocol;
+
+option go_package = "github.com/jacl-coder/PixelStorm-Server/internal/protocol";
+
+// ========== 基础消息结构 ==========
+
+// 通用响应
+message Response {
+  int32 code = 1;        // 状态码，0表示成功
+  string message = 2;    // 响应消息
+  bytes data = 3;        // 响应数据
+}
+
+// 向量2D
+message Vector2D {
+  float x = 1;
+  float y = 2;
+}
+
+// ========== 用户认证相关 ==========
+
+// 登录请求
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+// 登录响应
+message LoginResponse {
+  int64 player_id = 1;
+  string token = 2;
+  string username = 3;
+  int32 level = 4;
+}
+
+// 注册请求
+message RegisterRequest {
+  string username = 1;
+  string password = 2;
+  string email = 3;
+}
+
+// ========== 匹配相关 ==========
+
+// 匹配请求
+message MatchRequest {
+  int64 player_id = 1;
+  int32 character_id = 2;
+  string game_mode = 3;  // 游戏模式
+}
+
+// 匹配状态更新
+message MatchUpdate {
+  enum Status {
+    MATCHING = 0;        // 匹配中
+    MATCHED = 1;         // 匹配成功
+    CANCELED = 2;        // 已取消
+    TIMEOUT = 3;         // 超时
+  }
+  
+  Status status = 1;
+  int32 waiting_count = 2;  // 等待人数
+  string room_id = 3;       // 匹配成功时的房间ID
+}
+
+// ========== 房间相关 ==========
+
+// 房间信息
+message RoomInfo {
+  string id = 1;
+  string name = 2;
+  string mode = 3;
+  string status = 4;
+  int32 max_players = 5;
+  int32 current_players = 6;
+  int32 map_id = 7;
+  bool private_room = 8;
+  repeated RoomPlayerInfo players = 9;
+}
+
+// 房间内玩家信息
+message RoomPlayerInfo {
+  int64 player_id = 1;
+  string username = 2;
+  int32 character_id = 3;
+  int32 team = 4;
+  bool ready = 5;
+}
+
+// 创建房间请求
+message CreateRoomRequest {
+  string name = 1;
+  string mode = 2;
+  int32 max_players = 3;
+  int32 map_id = 4;
+  bool private_room = 5;
+  string password = 6;
+}
+
+// 加入房间请求
+message JoinRoomRequest {
+  string room_id = 1;
+  string password = 2;
+  int32 character_id = 3;
+}
+
+// ========== 游戏实体相关 ==========
+
+// 实体类型
+enum EntityType {
+  PLAYER = 0;
+  PROJECTILE = 1;
+  EFFECT = 2;
+  OBSTACLE = 3;
+  PICKUP = 4;
+}
+
+// 实体基础信息
+message EntityInfo {
+  string id = 1;
+  EntityType type = 2;
+  Vector2D position = 3;
+  float rotation = 4;
+  Vector2D velocity = 5;
+}
+
+// 玩家实体
+message PlayerEntityInfo {
+  EntityInfo base = 1;
+  int64 player_id = 2;
+  int32 character_id = 3;
+  int32 team = 4;
+  int32 health = 5;
+  int32 max_health = 6;
+  bool is_alive = 7;
+  map<int32, float> skill_cooldowns = 8;  // 技能ID -> 冷却时间
+}
+
+// 投射物实体
+message ProjectileEntityInfo {
+  EntityInfo base = 1;
+  string owner_id = 2;
+  int32 skill_id = 3;
+  int32 damage = 4;
+  float life_time = 5;
+  repeated string hit_entities = 6;
+}
+
+// ========== 游戏操作相关 ==========
+
+// 移动操作
+message MoveOperation {
+  Vector2D direction = 1;  // 移动方向向量，归一化
+  float speed = 2;         // 移动速度
+}
+
+// 旋转操作
+message RotateOperation {
+  float rotation = 1;      // 旋转角度(0-360)
+}
+
+// 技能操作
+message SkillOperation {
+  int32 skill_id = 1;      // 技能ID
+  Vector2D target = 2;     // 目标位置
+}
+
+// 玩家输入包
+message PlayerInput {
+  int64 timestamp = 1;     // 客户端时间戳
+  MoveOperation move = 2;
+  RotateOperation rotate = 3;
+  SkillOperation skill = 4;
+}
+
+// ========== 游戏状态同步 ==========
+
+// 游戏帧
+message GameFrame {
+  int64 frame_id = 1;      // 帧ID
+  int64 timestamp = 2;     // 服务器时间戳
+  repeated EntityInfo entities = 3;
+  repeated CollisionEvent collisions = 4;
+  map<int64, int32> scores = 5;  // 玩家ID -> 分数
+  int32 remaining_time = 6;      // 剩余时间(秒)
+}
+
+// 碰撞事件
+message CollisionEvent {
+  string entity_a = 1;
+  string entity_b = 2;
+  Vector2D position = 3;
+  int32 damage = 4;
+}
+
+// 游戏结果
+message GameResult {
+  string room_id = 1;
+  int64 start_time = 2;
+  int64 end_time = 3;
+  string winning_team = 4;
+  repeated PlayerResult players = 5;
+}
+
+// 玩家游戏结果
+message PlayerResult {
+  int64 player_id = 1;
+  string username = 2;
+  int32 team = 3;
+  int32 score = 4;
+  int32 kills = 5;
+  int32 deaths = 6;
+  int32 assists = 7;
+  int32 exp_gained = 8;
+  int32 coins_gained = 9;
+  bool mvp = 10;
+  int32 play_time = 11;
+}
+
+// ========== 角色相关 ==========
+
+// 技能类型
+enum SkillType {
+  SKILL_PROJECTILE = 0;
+  SKILL_AOE = 1;
+  SKILL_BUFF = 2;
+  SKILL_DEBUFF = 3;
+  SKILL_MOVEMENT = 4;
+  SKILL_UTILITY = 5;
+}
+
+// 技能信息
+message SkillInfo {
+  int32 id = 1;
+  string name = 2;
+  string description = 3;
+  SkillType type = 4;
+  int32 damage = 5;
+  float cooldown_time = 6;
+  float range = 7;
+  float effect_time = 8;
+  float projectile_speed = 9;
+  int32 projectile_count = 10;
+  float projectile_spread = 11;
+  string animation_key = 12;
+  string effect_key = 13;
+}
+
+// 角色信息
+message CharacterInfo {
+  int32 id = 1;
+  string name = 2;
+  string description = 3;
+  int32 max_hp = 4;
+  float speed = 5;
+  int32 base_attack = 6;
+  int32 base_defense = 7;
+  string special_ability = 8;
+  repeated SkillInfo skills = 9;
+  int32 difficulty = 10;
+  string role = 11;
+  bool unlockable = 12;
+  int32 unlock_cost = 13;
+}
+
+// 玩家角色信息
+message PlayerCharacterInfo {
+  int64 player_id = 1;
+  int32 character_id = 2;
+  int32 level = 3;
+  int32 exp = 4;
+  bool unlocked = 5;
+  int32 usage_count = 6;
+  int32 win_count = 7;
+  int32 kill_count = 8;
+  int32 death_count = 9;
+}
+
+// 角色解锁条件
+message CharacterUnlockRequirement {
+  int32 character_id = 1;
+  int32 required_level = 2;
+  int64 required_coins = 3;
+  int64 required_gems = 4;
+  int32 required_matches = 5;
+}
+
+// ========== 玩家资料相关 ==========
+
+// 玩家资料
+message PlayerProfile {
+  int64 id = 1;
+  string username = 2;
+  string email = 3;
+  int64 created_at = 4;
+  int64 updated_at = 5;
+  int32 level = 6;
+  int64 exp = 7;
+  int64 coins = 8;
+  int64 gems = 9;
+  int32 total_kills = 10;
+  int32 total_deaths = 11;
+  int32 total_assists = 12;
+  int32 total_matches = 13;
+  int32 total_wins = 14;
+  repeated PlayerCharacterInfo characters = 15;
+  CharacterInfo default_character = 16;
+}
+
+// ========== 战绩相关 ==========
+
+// 对局记录
+message MatchRecord {
+  string id = 1;
+  string game_mode = 2;
+  int64 start_time = 3;
+  int64 end_time = 4;
+  int32 winning_team = 5;
+  int32 map_id = 6;
+  int32 duration = 7;
+}
+
+// 玩家对局记录
+message PlayerMatchRecord {
+  string match_id = 1;
+  int64 player_id = 2;
+  int32 character_id = 3;
+  int32 team = 4;
+  int32 score = 5;
+  int32 kills = 6;
+  int32 deaths = 7;
+  int32 assists = 8;
+  int32 exp_gained = 9;
+  int32 coins_gained = 10;
+  bool mvp = 11;
+  int32 play_time = 12;
+  int64 join_time = 13;
+  int64 leave_time = 14;
+}
+
+// 玩家战绩统计
+message PlayerStats {
+  int64 player_id = 1;
+  int32 total_matches = 2;
+  int32 total_wins = 3;
+  int32 losses = 4;
+  float win_rate = 5;
+  int32 total_kills = 6;
+  int32 total_deaths = 7;
+  int32 total_assists = 8;
+  float kda = 9;
+  float average_score = 10;
+  int32 total_mvp = 11;
+  int32 play_time = 12;
+}
+
+// 排行榜条目
+message LeaderboardEntry {
+  int64 player_id = 1;
+  string username = 2;
+  int32 level = 3;
+  int32 total_kills = 4;
+  int32 total_wins = 6;
+  float win_rate = 7;
+  float kda = 8;
+  float score = 9;
+  int32 rank = 10;
+}
+
+// ========== 地图相关 ==========
+
+// 游戏地图信息
+message GameMapInfo {
+  int32 id = 1;
+  string name = 2;
+  string description = 3;
+  string image_path = 4;
+  int32 width = 5;
+  int32 height = 6;
+  int32 max_players = 7;
+  repeated string supported_modes = 8;
+}
+
+// ========== 匹配偏好相关 ==========
+
+// 匹配偏好
+message MatchPreferences {
+  int64 player_id = 1;
+  repeated string preferred_modes = 2;
+  repeated int32 preferred_maps = 3;
+  int32 max_ping = 4;
+  bool auto_ready = 5;
+  bool allow_cross_platform = 6;
+}
+
+// 匹配历史
+message MatchHistory {
+  string id = 1;
+  int64 player_id = 2;
+  string game_mode = 3;
+  int64 queue_time = 4;
+  int64 match_time = 5;
+  string status = 6;
+  string room_id = 7;
+}
+
+// ========== API 请求和响应 ==========
+
+// 角色列表响应
+message CharacterListResponse {
+  bool success = 1;
+  string message = 2;
+  repeated CharacterInfo data = 3;
+}
+
+// 角色详情响应
+message CharacterDetailResponse {
+  bool success = 1;
+  string message = 2;
+  CharacterInfo data = 3;
+}
+
+// 玩家角色查询响应
+message PlayerCharactersResponse {
+  bool success = 1;
+  string message = 2;
+  repeated PlayerCharacterInfo data = 3;
+}
+
+// 设置默认角色请求
+message SetDefaultCharacterRequest {
+  int64 player_id = 1;
+  int32 character_id = 2;
+}
+
+// 玩家资料响应
+message PlayerProfileResponse {
+  bool success = 1;
+  string message = 2;
+  PlayerProfile data = 3;
+}
+
+// 更新玩家资料请求
+message UpdatePlayerProfileRequest {
+  int64 player_id = 1;
+  string username = 2;
+  string email = 3;
+}
+
+// 战绩查询响应
+message PlayerStatsResponse {
+  bool success = 1;
+  string message = 2;
+  PlayerStats data = 3;
+}
+
+// 对局历史响应
+message MatchHistoryResponse {
+  bool success = 1;
+  string message = 2;
+  repeated PlayerMatchRecord data = 3;
+  int32 total = 4;
+  int32 page = 5;
+  int32 page_size = 6;
+}
+
+// 排行榜响应
+message LeaderboardResponse {
+  bool success = 1;
+  string message = 2;
+  repeated LeaderboardEntry data = 3;
+  string leaderboard_type = 4;
+}
+
+// 匹配偏好设置请求
+message SetMatchPreferencesRequest {
+  int64 player_id = 1;
+  MatchPreferences preferences = 2;
+}
+
+// 匹配偏好查询响应
+message MatchPreferencesResponse {
+  bool success = 1;
+  string message = 2;
+  MatchPreferences data = 3;
+}
+
+// 匹配历史查询响应
+message MatchHistoryListResponse {
+  bool success = 1;
+  string message = 2;
+  repeated MatchHistory data = 3;
+  int32 total = 4;
+  int32 page = 5;
+  int32 page_size = 6;
+}
+
+// 通用成功响应
+message SuccessResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// 通用错误响应
+message ErrorResponse {
+  bool success = 1;
+  string message = 2;
+  string error_code = 3;
+}

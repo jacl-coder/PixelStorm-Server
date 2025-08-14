@@ -1,0 +1,22 @@
+server:
+  game_port: 8080
+  match_port: 8081
+  gateway_port: 8082
+  debug: true
+  log_level: debug
+  max_room_count: 100
+  max_players: 1000
+
+database:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: 1024
+  dbname: pixelstorm
+  sslmode: disable
+
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0 
